@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-commerce Search Prototype</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 20px;
+        }
+
+        .search-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, .05);
+        }
+
+        .card-img-top {
+            width: 90px;
+            height: 120px;
+            object-fit: cover;
+        }
+
+        .product-card {
+            width: 100%; /* Adjust the card width as needed */
+        }
+
+        .card-body {
+            padding: 10px;
+        }
+
+        .product-card-body {
+            padding: 15px;
+        }
+
+        .product-name {
+            color: #007bff;
+            font-weight: bold;
+            text-wrap: normal;
+        }
+
+        header {
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Hybrid search engine</h1>
+</header>
+<div class="container mt-3">
+    <div class="row">
+        <!-- Facet Filters Column -->
+        <div class="col-md-2">
+            <h5>Filter your search</h5>
+            <div id="genderFilter" class="form-group facet" data-label="Gender">
+                <!-- Checkboxes for Gender will be dynamically added here -->
+            </div>
+            <div id="baseColourFilter" class="form-group facet" data-label="Color">
+                <!-- Checkboxes for baseColour will be dynamically added here -->
+            </div>
+            <div id="seasonFilter" class="form-group facet" data-label="Season">
+                <!-- Checkboxes for Season will be dynamically added here -->
+            </div>
+            <div id="usageFilter" class="form-group facet" data-label="Usage">
+                <!-- Checkboxes for Usage will be dynamically added here -->
+            </div>
+            <button id="resetFilters" class="btn btn-primary" style="display: none" onclick="resetFilters()">Reset
+                Filters
+            </button>
+        </div>
+        <!-- Search Results Column -->
+        <div class="col-md-10">
+            <div class="search-container">
+                <form id="searchForm">
+                    <div class="form-group">
+                        <label for="searchQuery">Search with Query:</label>
+                        <input type="text" class="form-control" id="searchQuery" placeholder="Search for products" autocomplete="off">
+                        <br>
+                        <label>OR Search with Image:</label>
+                        <input type="file" id="searchQueryImage" accept="image/jpeg" style="display: none;"
+                               onchange="previewImage();"/>
+                        <button type="button" onclick="document.getElementById('searchQueryImage').click();">Upload
+                            Image
+                        </button>
+                        <img id="imagePreview" src="" alt="Image preview..."
+                             style="display: none; max-width: 200px; max-height: 200px;"/>
+                    </div>
+                    <label for="alpha">Alpha:</label>
+                    <input type="range" id="alpha" name="alpha" min="0" max="1" step="0.01" value="0">
+                    <span id="alphaValue">0</span>
+                    <p><span class="badge bg-warning">Alpha 0 means only key-word search</span> which uses only the
+                        sparse embeddings</p>
+                    <p><span class="badge bg-danger">Alpha 1 means only semantic search</span> which uses only the
+                        dense embeddings</p>
+                    <button type="submit" class="btn btn-primary btn-block">Search</button>
+                </form>
+            </div>
+            <div id="searchResults" class="mt-4"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap and JavaScript -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    function populateFacets(facets, appliedFilters) {
+        const facetContainers = document.querySelectorAll('.facet');
+        facetContainers.forEach(container => {
+            container.innerHTML = ''; // Clear the innerHTML, removing all child elements
+            // Optionally, re-add any static elements like labels if necessary
+            const label = document.createElement('label');
+            label.textContent = container.getAttribute('data-label');
+            container.appendChild(label);
+        });
+        Object.keys(facets).forEach(facetName => {
+            const container = document.getElementById(facetName + 'Filter');
+            const isChecked = facets[facetName].includes(appliedFilters[facetName]) ? "checked" : ""
+            facets[facetName].forEach(option => {
+                const checkboxContainer = document.createElement('div');
+                checkboxContainer.className = 'checkbox';
+                const id = `${facetName}-${option}`;
+                checkboxContainer.innerHTML = `
+                            <label for="${id}">
+                                <input type="checkbox" id="${id}" name="${facetName}" value="${option}" onchange="updateSearchResults()" ${isChecked}>
+                                ${option}
+                            </label>
+                        `;
+                container.appendChild(checkboxContainer);
+            });
+        });
+        Object.keys(facets).forEach(facetName => {
+            if (facets[facetName] && facets[facetName].length > 0) {
+                $('#resetFilters').show();
+            }
+        });
+    }
+
+    function previewImage() {
+        const preview = document.getElementById('imagePreview');
+        const file = document.getElementById('searchQueryImage').files[0];
+        const reader = new FileReader();
+
+        reader.onloadend = function () {
+            preview.src = reader.result;
+            preview.style.display = 'block'; // Make the image visible
+        }
+
+        if (file) {
+            reader.readAsDataURL(file); // Read the image file as a data URL.
+        } else {
+            preview.src = "";
+            preview.style.display = 'none'; // Hide the image element if no file is selected
+        }
+    }
+
+
+    function resetFilters() {
+        let query = document.getElementById('searchQuery').value;
+        let alpha = document.getElementById('alpha').value;
+        let searchQueryImage = document.getElementById('searchQueryImage').files[0];
+
+        const formData = new FormData();
+        formData.append('query', query);
+        formData.append('alpha', alpha);
+
+        if (searchQueryImage) {
+            formData.append('image', searchQueryImage);
+        }
+        search(formData)
+    }
+
+    function search(formData) {
+        fetch('/search', {
+            method: 'POST',
+            body: formData,
+        })
+            .then(response => response.json())
+            .then(data => {
+                showSearchResults(data)
+                populateFacets(data['facets'], data['appliedFilters'])
+            });
+    }
+
+    function showSearchResults(data) {
+        let resultsDiv = document.getElementById('searchResults');
+
+        let query = document.getElementById('searchQuery').value;
+        if (query) {
+            resultsDiv.innerHTML = `<h3>Showing results for : <i>"${query}"</i><h3>`;
+        }
+
+        const file = document.getElementById('searchQueryImage').files[0];
+        if(file){
+            let src = URL.createObjectURL(file)
+            resultsDiv.innerHTML = `<h3>Showing results for : <img src=${src} alt='query'/><h3>`;
+        }
+
+        let row = null;
+        search_results = data['response']
+        search_results.forEach((product, index) => {
+            if (index % 3 === 0) {
+                row = document.createElement('div');
+                row.className = 'row';
+                resultsDiv.appendChild(row);
+            }
+            let col = document.createElement('div');
+            col.className = 'col-md-4 mb-4';
+            col.innerHTML = '<div class="card product-card h-100"><div class="card-body d-flex flex-column align-items-center">' +
+                '<img src="/static/' + product.imageUrl + '" class="card-img-top" alt="' + product.productDisplayName + '">' +
+                '<h6 class="product-name mt-2">' + product.productDisplayName + '</h6>' +
+                '<p class="product-detail"><strong>Category:</strong> ' + product.subCategory + ' (' + product.articleType + ')</p>' +
+                '<p class="product-detail"><strong>Color:</strong> ' + product.baseColour + '</p>' +
+                '<p class="product-detail"><strong>Season:</strong> ' + product.season + ' ' + product.year + '</p>' +
+                '<p class="product-detail"><strong>Usage:</strong> ' + product.usage + '</p>' +
+                '</div></div>';
+            row.appendChild(col);
+        });
+    }
+
+    document.getElementById('alpha').oninput = function () {
+        document.getElementById('alphaValue').textContent = this.value;
+    }
+
+    document.getElementById('searchForm').onsubmit = function (event) {
+        event.preventDefault();
+        updateSearchResults();
+    }
+
+    // Collect selected facet values from checkboxes
+    function getSelectedFacetValues(facetName) {
+        return Array.from(document.querySelectorAll(`input[name="${facetName}"]:checked`)).map(el => el.value);
+    }
+
+    function updateSearchResults() {
+        let query = document.getElementById('searchQuery').value;
+        let alpha = document.getElementById('alpha').value;
+        let searchQueryImage = document.getElementById('searchQueryImage').files[0];
+
+        let genders = getSelectedFacetValues('gender');
+        let baseColours = getSelectedFacetValues('baseColour');
+        let seasons = getSelectedFacetValues('season');
+        let usages = getSelectedFacetValues('usage');
+
+        const formData = new FormData();
+        formData.append('query', query);
+        formData.append('alpha', alpha);
+        formData.append('gender', genders);
+        formData.append('baseColour', baseColours);
+        formData.append('season', seasons);
+        formData.append('usage', usages);
+        if (searchQueryImage) {
+            formData.append('image', searchQueryImage);
+        }
+
+        search(formData)
+    }
+
+</script>
+</body>
+</html>

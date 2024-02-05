@@ -1,0 +1,8 @@
+Flask==2.2.5
+jinja2==3.1.2
+werkzeug==2.3.8
+pinecone-client==3.0.2
+pinecone_text==0.7.2
+sentence_transformers==2.3.1
+datasets==2.16.1
+tqdm==4.66.1
