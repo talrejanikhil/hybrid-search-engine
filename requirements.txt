@@ -6,3 +6,4 @@ pinecone_text==0.7.2
 sentence_transformers==2.3.1
 datasets==2.16.1
 tqdm==4.66.1
+pillow==10.2.0

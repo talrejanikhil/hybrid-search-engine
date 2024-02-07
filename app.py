@@ -1,5 +1,6 @@
 # Import necessary libraries:
 import pandas as pd
+from PIL import Image
 from flask import Flask, request, render_template, jsonify
 
 from query import search_products
@@ -21,7 +22,7 @@ def search():
     search_query_image = None
     # Check if an image file is part of the request for image-based search functionality.
     if 'image' in request.files:
-        search_query_image = request.files['image']
+        search_query_image = Image.open(request.files['image'])
     # Print the form data to the console for debugging purposes.
     print(request.form)
     # Collect additional filter parameters from the form data to apply in the product search.

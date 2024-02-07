@@ -35,7 +35,7 @@ def search_products(query, query_filter, image_input=None, k=20, alpha=0.0):
     if image_input is None:
         dense_q = model.encode(query, convert_to_tensor=True, show_progress_bar=False).tolist()
     else:
-        dense_q = img_model.encode(query, convert_to_tensor=True, show_progress_bar=False).tolist()
+        dense_q = img_model.encode(image_input, convert_to_tensor=True, show_progress_bar=False).tolist()
 
     hdense, hsparse = hybrid_scale(dense_q, sparse_q, alpha=alpha)
 

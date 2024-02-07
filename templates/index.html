@@ -89,7 +89,7 @@
                             Image
                         </button>
                         <img id="imagePreview" src="" alt="Image preview..."
-                             style="display: none; max-width: 200px; max-height: 200px;"/>
+                             style="display: none; max-width: 120px; max-height: 90px;"/>
                     </div>
                     <label for="alpha">Alpha:</label>
                     <input type="range" id="alpha" name="alpha" min="0" max="1" step="0.01" value="0">
@@ -200,7 +200,7 @@
         const file = document.getElementById('searchQueryImage').files[0];
         if(file){
             let src = URL.createObjectURL(file)
-            resultsDiv.innerHTML = `<h3>Showing results for : <img src=${src} alt='query'/><h3>`;
+            resultsDiv.innerHTML = `<h3>Showing results for : <img src=${src} alt='query' width="90px" height="90px"/><h3>`;
         }
 
         let row = null;
